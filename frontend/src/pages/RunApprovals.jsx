@@ -30,36 +30,18 @@ export default function RunApprovals() {
 
   const pendingFindings = details.findings.filter(f => f.status === 'pending');
 
-  const questions = pendingFindings.map(f => ({
-    id: f.id,
-    q: f.title,
-    summary: f.summary,
-    type: 'radio',
-    options: ['Approve', 'Reject']
-  }));
-
-  const handleComplete = async ({ answers, custom }) => {
+  const handleDecision = async (findingId, decision, comment) => {
+    if (submitting) return; // Prevent race conditions
     setSubmitting(true);
     try {
-      // answers is a map of question_index -> [selected_option_index]
-      for (const [qIdxStr, selectedArray] of Object.entries(answers)) {
-        const qIdx = parseInt(qIdxStr);
-        const findingId = questions[qIdx].id;
-        const decisionIndex = selectedArray[0];
-        
-        // 0 = Approve, 1 = Reject
-        const decision = decisionIndex === 0 ? 'approve' : 'reject';
-        const comment = custom[qIdx];
-        
-        await approveFinding(id, findingId, decision, null, comment);
-      }
+      await approveFinding(id, findingId, decision, null, comment);
       
-      // Reload details
+      // Reload details directly from authoritative backend state
       const newData = await getRunDetails(id);
       setDetails(newData);
     } catch(e) {
       console.error(e);
-      alert('Failed to submit approvals.');
+      alert('Failed to submit decision.');
     } finally {
       setSubmitting(false);
     }
@@ -112,11 +94,12 @@ export default function RunApprovals() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
            <div className="space-y-4">
               <h2 className="text-sm font-semibold text-ink-3 uppercase tracking-wider">Review Queue ({pendingFindings.length})</h2>
-              {submitting ? (
-                 <LoadingState label="Committing decisions..." />
-              ) : (
-                 <ApprovalCard questions={questions} onComplete={handleComplete} />
-              )}
+              <ApprovalCard 
+                 finding={pendingFindings[0]} 
+                 totalPending={pendingFindings.length}
+                 onSubmit={handleDecision}
+                 isSubmitting={submitting}
+              />
            </div>
            <div className="space-y-4">
               <h2 className="text-sm font-semibold text-ink-3 uppercase tracking-wider">Context</h2>
