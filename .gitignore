@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.cache
+.ruff_cache/
+.mypy_cache/
+
+# Logs and runtime
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker
+.docker/
+
+# Alembic
+backend/alembic/versions/__pycache__/
