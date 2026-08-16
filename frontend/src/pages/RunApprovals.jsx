@@ -41,7 +41,7 @@ export default function RunApprovals() {
       setDetails(newData);
     } catch(e) {
       console.error(e);
-      alert('Failed to submit decision.');
+      alert(`Failed to submit decision: ${e.message || e}`);
     } finally {
       setSubmitting(false);
     }

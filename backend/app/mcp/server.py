@@ -1,5 +1,5 @@
 import logging
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -10,6 +10,7 @@ mcp = FastMCP("FlowDocs MCP Server")
 
 # Import tools so they are registered with the decorator
 import app.mcp.tools
+app.mcp.tools.register_tools(mcp)
 
 def main():
     """Run the MCP server via stdio transport."""

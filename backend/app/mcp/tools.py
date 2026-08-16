@@ -80,32 +80,36 @@ def register_tools(mcp):
         Args:
             run_id: The ID of the run.
         """
-        checkpointer = get_checkpointer()
-        graph = compile_workflow(checkpointer=checkpointer, interrupt_before=["approval"])
-        thread_config = {"configurable": {"thread_id": run_id}}
-        
-        state_snapshot = graph.get_state(thread_config)
-        
-        if state_snapshot and state_snapshot.values:
-            state = dict(state_snapshot.values)
-        else:
-            state = {"run_id": run_id, "current_stage": "ingest"}
+        checkpointer_gen = get_checkpointer()
+        checkpointer = next(checkpointer_gen)
+        try:
+            graph = compile_workflow(checkpointer=checkpointer, interrupt_before=["approval"])
+            thread_config = {"configurable": {"thread_id": run_id}}
             
-        session_factory = get_session_factory()
-        with session_factory() as session:
-            run = session.get(Run, uuid.UUID(run_id))
-            if run:
-                if run.status == "failed":
-                    state["status"] = "failed"
-                    if run.input_metadata and "error" in run.input_metadata:
-                        errors = state.get("errors") or []
-                        if run.input_metadata["error"] not in errors:
-                            errors.append(run.input_metadata["error"])
-                        state["errors"] = errors
-                elif not state.get("status"):
-                    state["status"] = run.status
-                    
-        return state
+            state_snapshot = graph.get_state(thread_config)
+            
+            if state_snapshot and state_snapshot.values:
+                state = dict(state_snapshot.values)
+            else:
+                state = {"run_id": run_id, "current_stage": "ingest"}
+                
+            session_factory = get_session_factory()
+            with session_factory() as session:
+                run = session.get(Run, uuid.UUID(run_id))
+                if run:
+                    if run.status == "failed":
+                        state["status"] = "failed"
+                        if run.input_metadata and "error" in run.input_metadata:
+                            errors = state.get("errors") or []
+                            if run.input_metadata["error"] not in errors:
+                                errors.append(run.input_metadata["error"])
+                            state["errors"] = errors
+                    elif not state.get("status"):
+                        state["status"] = run.status
+                        
+            return state
+        finally:
+            checkpointer_gen.close()
 
     @mcp.tool()
     def resume_run(run_id: str) -> dict:
@@ -245,18 +249,22 @@ def register_tools(mcp):
             
         if pending_count == 0:
             # All findings are reviewed! Update the graph state and resume.
-            checkpointer = get_checkpointer()
-            graph = compile_workflow(checkpointer=checkpointer, interrupt_before=["approval"])
-            thread_config = {"configurable": {"thread_id": run_id}}
-            
-            graph.update_state(
-                thread_config,
-                {"approval_decision": "approved", "reviewer": "mcp_machine"},
-                as_node="verify"
-            )
-            
-            threading.Thread(target=run_graph_background, args=(run_id, None), daemon=True).start()
-            return {"finding_id": finding_id, "status": finding.status, "message": "All findings reviewed, workflow resumed."}
+            checkpointer_gen = get_checkpointer()
+            checkpointer = next(checkpointer_gen)
+            try:
+                graph = compile_workflow(checkpointer=checkpointer, interrupt_before=["approval"])
+                thread_config = {"configurable": {"thread_id": run_id}}
+                
+                graph.update_state(
+                    thread_config,
+                    {"approval_decision": "approved", "reviewer": "mcp_machine"},
+                    as_node="verify"
+                )
+                
+                threading.Thread(target=run_graph_background, args=(run_id, None), daemon=True).start()
+                return {"finding_id": finding_id, "status": finding.status, "message": "All findings reviewed, workflow resumed."}
+            finally:
+                checkpointer_gen.close()
             
         return {"finding_id": finding_id, "status": finding.status, "message": f"{pending_count} findings remaining."}
 

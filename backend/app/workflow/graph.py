@@ -447,7 +447,8 @@ def analyze_node(state: WorkflowState) -> dict:
                         compliance_checks_total += 1
                         if getattr(f_info, "severity", None) == "passed":
                             compliance_checks_passed += 1
-                            continue
+                            # We still want to create a finding so the human can review the passed check!
+                            # We just increment the counter.
 
                         # Only create finding if it references valid extracted claims OR has new_claims (e.g. for missing requirements)
                         valid_cids = [cid for cid in getattr(f_info, "claim_ids", []) if cid in extracted_claim_ids]

@@ -85,7 +85,12 @@ export default function RunDetail() {
     setIsUploading(true);
     setUploadError(null);
     try {
-      await addDocumentsToRun(id, files);
+      const uploadResp = await addDocumentsToRun(id, files);
+      
+      if (uploadResp && uploadResp.existing_documents) {
+        setInitialDocIds(uploadResp.existing_documents);
+        sessionStorage.setItem(`run_${id}_initial_docs`, JSON.stringify(uploadResp.existing_documents));
+      }
       
       // Fetch updated state immediately instead of waiting for the interval
       const [s, d] = await Promise.all([
@@ -94,11 +99,14 @@ export default function RunDetail() {
       ]);
       setState(s);
       setDetails(d);
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (err) {
       setUploadError(err.message);
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
   const handleResume = async (e) => {

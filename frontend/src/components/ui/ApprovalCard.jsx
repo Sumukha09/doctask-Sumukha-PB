@@ -10,7 +10,7 @@ export default function ApprovalCard({ finding, totalPending, onSubmit, isSubmit
 
   const handleToggle = (decision) => {
     if (isSubmitting) return;
-    onSubmit(decision, custom);
+    onSubmit(finding.id, decision, custom);
     setCustom("");
   };
 

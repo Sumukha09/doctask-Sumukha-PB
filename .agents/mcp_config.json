@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "flowdocs-mcp": {
+      "command": "d:\\Projects\\flowdocs\\.venv\\Scripts\\python.exe",
+      "args": ["d:\\Projects\\flowdocs\\backend\\run_mcp.py"],
+      "env": {
+        "POSTGRES_USER": "flowdocs",
+        "POSTGRES_DB": "flowdocs",
+        "POSTGRES_PASSWORD": ""
+      }
+    }
+  }
+}
